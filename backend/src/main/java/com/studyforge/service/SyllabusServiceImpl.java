@@ -35,7 +35,6 @@ public class SyllabusServiceImpl implements SyllabusService {
     private final UserRepository userRepository;
     private final TopicRepository topicRepository;
 
-    @Autowired
     public SyllabusServiceImpl(SyllabusRepository syllabusRepository, UserRepository userRepository, TopicRepository topicRepository) {
         this.syllabusRepository = syllabusRepository;
         this.userRepository = userRepository;

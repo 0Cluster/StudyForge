@@ -3,7 +3,7 @@ import { Box, AppBar, Toolbar, Typography, Button, Container, IconButton, Drawer
 import { Menu as MenuIcon, Dashboard, MenuBook, Assignment, Person, Logout } from '@mui/icons-material';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
-import { authService } from '@/services/api';
+// import { authService } from '@/services/api';
 
 interface LayoutProps {
   children: ReactNode;
@@ -14,12 +14,14 @@ const Layout = ({ children }: LayoutProps) => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   
   // Check if user is authenticated
-  const isAuthenticated = authService.isAuthenticated();
-  const currentUser = authService.getCurrentUser();
+  // const isAuthenticated = authService.isAuthenticated();
+  const isAuthenticated = true; // Placeholder for authentication check, replace with actual logic
+  // const currentUser = authService.getCurrentUser();
+  const currentUser = { username: 'JohnDoe' }; // Placeholder for current user, replace with actual logic
 
   // Handle logout
   const handleLogout = () => {
-    authService.logout();
+    // authService.logout();
     router.push('/login');
   };
 

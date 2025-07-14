@@ -4,15 +4,17 @@ import { CloudUpload, Timeline, Assignment, TrendingUp } from '@mui/icons-materi
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { authService } from '@/services/api';
+import { truncate } from 'fs';
+// import { authService } from '@/services/api';
 
 export default function Home() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   
   // Check if user is authenticated
-  const isAuthenticated = authService.isAuthenticated();
-
+  
+  // const isAuthenticated = authService.isAuthenticated();
+  const isAuthenticated = true; // Placeholder for authentication check, replace with actual logic
   // Features for the landing page
   const features = [
     {

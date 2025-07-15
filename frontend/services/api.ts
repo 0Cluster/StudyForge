@@ -25,6 +25,21 @@ api.interceptors.request.use(
   }
 );
 
+// Handle token expiration errors
+api.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      // Auto logout if 401 response returned from API
+      authService.logout();
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
 // Auth services
 export const authService = {
   login: async (loginRequest: LoginRequest): Promise<AuthResponse> => {
@@ -49,7 +64,20 @@ export const authService = {
   getCurrentUser: (): User | null => {
     const userStr = localStorage.getItem('user');
     if (userStr) {
-      return JSON.parse(userStr);
+      try {
+        const userData = JSON.parse(userStr);
+        return {
+          id: userData.id,
+          username: userData.username,
+          email: userData.email,
+          firstName: userData.firstName || '',
+          lastName: userData.lastName || '',
+          roles: userData.roles || []
+        };
+      } catch (e) {
+        console.error('Error parsing user data:', e);
+        return null;
+      }
     }
     return null;
   },

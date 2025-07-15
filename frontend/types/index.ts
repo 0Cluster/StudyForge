@@ -89,6 +89,8 @@ export interface SignupRequest {
   username: string;
   email: string;
   password: string;
+  firstName: string;
+  lastName: string;
 }
 
 export interface AuthResponse {
@@ -119,4 +121,55 @@ export interface CreateTopicRequest {
 export interface TrackProgressRequest {
   topicId: number;
   completionPercentage: number;
+}
+
+export interface CreateAssignmentRequest {
+  title: string;
+  content?: string;
+  difficultyLevel: 'EASY' | 'MEDIUM' | 'HARD' | 'GOD';
+  maxPoints?: number;
+  topicId: number;
+  questions?: CreateQuestionRequest[];
+}
+
+export interface CreateQuestionRequest {
+  text: string;
+  type: 'MULTIPLE_CHOICE' | 'TRUE_FALSE' | 'SHORT_ANSWER' | 'ESSAY';
+  points?: number;
+  options?: QuestionOption[];
+  correctAnswer?: string;
+}
+
+export interface SubmissionResponse {
+  id: number;
+  submission: string;
+  score: number;
+  feedback: string;
+  submittedAt: string;
+  userId: number;
+  assignmentId: number;
+  questionResponses?: QuestionResponse[];
+}
+
+export interface QuestionResponse {
+  id: number;
+  questionId: number;
+  userAnswer: string;
+  isCorrect: boolean;
+  points: number;
+  submissionId: number;
+}
+
+export interface AuthResponse {
+  token: string;
+  type: string;
+  id: number;
+  username: string;
+  email: string;
+  roles: string[];
+}
+
+export interface LoginRequest {
+  username: string;
+  password: string;
 }

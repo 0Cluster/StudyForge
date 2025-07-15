@@ -10,7 +10,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/progress")
-@CrossOrigin(origins = "*", maxAge = 3600)
 public class ProgressController {
 
     private final ProgressService progressService;

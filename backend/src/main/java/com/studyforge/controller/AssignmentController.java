@@ -14,7 +14,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/assignments")
-@CrossOrigin(origins = "*", maxAge = 3600)
 public class AssignmentController {
 
     private final AssignmentService assignmentService;

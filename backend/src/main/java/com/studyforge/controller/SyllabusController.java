@@ -15,7 +15,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/syllabi")
-@CrossOrigin(origins = "*", maxAge = 3600)
 public class SyllabusController {
 
     private final SyllabusService syllabusService;

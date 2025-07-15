@@ -1,9 +1,9 @@
-import { ReactNode, useState } from 'react';
+import { ReactNode, useState, useEffect, useContext } from 'react';
 import { Box, AppBar, Toolbar, Typography, Button, Container, IconButton, Drawer, List, ListItem, ListItemIcon, ListItemText, Divider } from '@mui/material';
 import { Menu as MenuIcon, Dashboard, MenuBook, Assignment, Person, Logout } from '@mui/icons-material';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
-// import { authService } from '@/services/api';
+import { AuthContext } from '@/contexts/AuthContext';
 
 interface LayoutProps {
   children: ReactNode;
@@ -13,16 +13,12 @@ const Layout = ({ children }: LayoutProps) => {
   const router = useRouter();
   const [drawerOpen, setDrawerOpen] = useState(false);
   
-  // Check if user is authenticated
-  // const isAuthenticated = authService.isAuthenticated();
-  const isAuthenticated = true; // Placeholder for authentication check, replace with actual logic
-  // const currentUser = authService.getCurrentUser();
-  const currentUser = { username: 'JohnDoe' }; // Placeholder for current user, replace with actual logic
+  // Use the authentication context
+  const { isAuthenticated, user: currentUser, logout } = useContext(AuthContext);
 
   // Handle logout
   const handleLogout = () => {
-    // authService.logout();
-    router.push('/login');
+    logout();
   };
 
   // Toggle drawer

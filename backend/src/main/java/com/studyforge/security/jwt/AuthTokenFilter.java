@@ -33,9 +33,22 @@ public class AuthTokenFilter extends OncePerRequestFilter {
   protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
       throws ServletException, IOException {
     try {
+      String path = request.getRequestURI();
+      logger.debug("Processing request: {}", path);
+      
+      // Skip token validation for auth endpoints
+      if (path.contains("/auth/signin") || path.contains("/auth/signup")) {
+        logger.debug("Skipping authentication for public endpoint: {}", path);
+        filterChain.doFilter(request, response);
+        return;
+      }
+      
       String jwt = parseJwt(request);
+      logger.debug("JWT Token: {}", jwt != null ? "Present" : "Not present");
+      
       if (jwt != null && jwtUtils.validateJwtToken(jwt)) {
         String username = jwtUtils.getUserNameFromJwtToken(jwt);
+        logger.debug("JWT valid for user: {}", username);
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(username);
         UsernamePasswordAuthenticationToken authentication =

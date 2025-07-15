@@ -1,10 +1,12 @@
 import '@/styles/globals.css';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import { SessionProvider } from 'next-auth/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { AppProps } from 'next/app';
+import { useRouter } from 'next/router';
 import Layout from '@/components/layout/Layout';
+import AuthGuard from '@/components/auth/AuthGuard';
+import { AuthProvider } from '@/contexts/AuthContext';
 
 // Create a client
 const queryClient = new QueryClient();
@@ -32,17 +34,38 @@ const theme = createTheme({
   },
 });
 
-export default function App({ Component, pageProps: { session, ...pageProps } }: AppProps) {
+export default function App({ Component, pageProps }: AppProps) {
+  const router = useRouter();
+  
+  // Define paths that don't require authentication
+  const publicPaths = [
+    '/',
+    '/login',
+    '/signup',
+    '/reset-password',
+  ];
+  
+  // Check if the path is public
+  const isPublicPath = publicPaths.includes(router.pathname);
+  
   return (
-    <SessionProvider session={session}>
-      <QueryClientProvider client={queryClient}>
-        <ThemeProvider theme={theme}>
-          <CssBaseline />
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <AuthProvider>
           <Layout>
-            <Component {...pageProps} />
+            {isPublicPath ? (
+              // Public page - no auth required
+              <Component {...pageProps} />
+            ) : (
+              // Protected page - requires authentication
+              <AuthGuard>
+                <Component {...pageProps} />
+              </AuthGuard>
+            )}
           </Layout>
-        </ThemeProvider>
-      </QueryClientProvider>
-    </SessionProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
   );
 }

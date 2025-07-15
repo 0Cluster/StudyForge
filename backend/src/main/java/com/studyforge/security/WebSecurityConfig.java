@@ -1,5 +1,6 @@
 package com.studyforge.security;
 
+import com.studyforge.config.CorsConfig;
 import com.studyforge.security.jwt.AuthEntryPointJwt;
 import com.studyforge.security.jwt.AuthTokenFilter;
 import com.studyforge.security.services.UserDetailsServiceImpl;
@@ -16,6 +17,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfigurationSource;
 
 @Configuration
 @EnableWebSecurity
@@ -24,10 +26,15 @@ public class WebSecurityConfig {
     
     private final UserDetailsServiceImpl userDetailsService;
     private final AuthEntryPointJwt unauthorizedHandler;
+    private final CorsConfigurationSource corsConfigurationSource;
     
-    public WebSecurityConfig(UserDetailsServiceImpl userDetailsService, AuthEntryPointJwt unauthorizedHandler) {
+    public WebSecurityConfig(
+            UserDetailsServiceImpl userDetailsService, 
+            AuthEntryPointJwt unauthorizedHandler,
+            CorsConfigurationSource corsConfigurationSource) {
         this.userDetailsService = userDetailsService;
         this.unauthorizedHandler = unauthorizedHandler;
+        this.corsConfigurationSource = corsConfigurationSource;
     }
     
     @Bean
@@ -57,12 +64,19 @@ public class WebSecurityConfig {
     
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http.csrf(csrf -> csrf.disable())
+        http.cors(cors -> cors.configurationSource(corsConfigurationSource))
+            .csrf(csrf -> csrf.disable())
             .exceptionHandling(exception -> exception.authenticationEntryPoint(unauthorizedHandler))
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> 
-                auth.requestMatchers("/api/auth/**").permitAll()
-                    .requestMatchers("/api/test/**").permitAll()
+                // Public endpoints that don't require authentication
+                auth.requestMatchers("/auth/**").permitAll()
+                    .requestMatchers("/test/**").permitAll()
+                    // Required for debugging and development
+                    .requestMatchers("/error").permitAll()
+                    .requestMatchers("/actuator/**").permitAll()
+                    .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                    // All other endpoints require authentication
                     .anyRequest().authenticated()
             );
         

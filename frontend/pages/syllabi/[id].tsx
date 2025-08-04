@@ -13,8 +13,8 @@ import {
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
-// import { syllabusService } from '@/services/syllabus';
-// import { topicService } from '@/services/topic';
+import { syllabusService } from '@/services/syllabus';
+import { topicService } from '@/services/topic';
 import { Syllabus, Topic } from '@/types';
 
 interface TabPanelProps {
@@ -139,12 +139,9 @@ export default function SyllabusDetail() {
     const fetchSyllabus = async () => {
       setLoading(true);
       try {
-        // Replace with actual API call when service is uncommented
-        // const data = await syllabusService.getById(syllabusId);
-        // setSyllabus(data);
-        
-        // Using sample data
-        setSyllabus(sampleSyllabus);
+        // Get syllabus data from the API
+        const data = await syllabusService.getById(syllabusId);
+        setSyllabus(data);
       } catch (err) {
         console.error('Error fetching syllabus:', err);
         setError('Failed to load syllabus details. Please try again later.');
@@ -164,11 +161,8 @@ export default function SyllabusDetail() {
     if (!syllabusId) return;
     
     try {
-      // Replace with actual API call when service is uncommented
-      // await syllabusService.delete(syllabusId);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Call the API to delete the syllabus
+      await syllabusService.delete(syllabusId);
       
       router.push('/dashboard');
     } catch (err) {
@@ -184,15 +178,16 @@ export default function SyllabusDetail() {
     
     setGeneratingTopics(true);
     try {
-      // Replace with actual API call when service is uncommented
-      // const topics = await syllabusService.generateTopics(syllabusId);
-      // setSyllabus(prev => prev ? { ...prev, topics } : null);
+      // Call the API to generate topics
+      const topics = await syllabusService.generateTopics(syllabusId);
+      setSyllabus(prev => prev ? { ...prev, topics } : null);
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      
-      // For demo, just show it was successful
+      // Show success message
+      setError(null);
       alert('Topics generated successfully!');
+      
+      // Refresh the page to show the new topics
+      router.replace(`/syllabi/${syllabusId}`);
     } catch (err) {
       console.error('Error generating topics:', err);
       setError('Failed to generate topics. Please try again later.');

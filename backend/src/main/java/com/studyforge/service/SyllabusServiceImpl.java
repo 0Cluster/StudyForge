@@ -5,7 +5,8 @@ import com.studyforge.model.Topic;
 import com.studyforge.repository.SyllabusRepository;
 import com.studyforge.repository.TopicRepository;
 import com.studyforge.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.studyforge.dto.TopicGenerationResponse;
+import com.studyforge.dto.TopicDto;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -34,11 +35,14 @@ public class SyllabusServiceImpl implements SyllabusService {
     private final SyllabusRepository syllabusRepository;
     private final UserRepository userRepository;
     private final TopicRepository topicRepository;
+    private final OpenAIService openAIService;
 
-    public SyllabusServiceImpl(SyllabusRepository syllabusRepository, UserRepository userRepository, TopicRepository topicRepository) {
+    public SyllabusServiceImpl(SyllabusRepository syllabusRepository, UserRepository userRepository, 
+                             TopicRepository topicRepository, OpenAIService openAIService) {
         this.syllabusRepository = syllabusRepository;
         this.userRepository = userRepository;
         this.topicRepository = topicRepository;
+        this.openAIService = openAIService;
     }
 
     @Override
@@ -82,6 +86,12 @@ public class SyllabusServiceImpl implements SyllabusService {
 
     @Override
     public Syllabus processDocument(MultipartFile file, String title, String description, Long userId) {
+        return processDocument(file, title, description, userId, null, null);
+    }
+    
+    @Override
+    public Syllabus processDocument(MultipartFile file, String title, String description, Long userId, 
+                                  LocalDateTime startDate, LocalDateTime endDate) {
         try {
             String contentType = file.getContentType();
             String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
@@ -95,13 +105,16 @@ public class SyllabusServiceImpl implements SyllabusService {
             Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
             Syllabus.DocumentType documentType = determineDocumentType(contentType);
-            String extractedText = extractTextFromDocument(file, documentType);
+            // Extract text but don't store it in syllabus object, it will be extracted again when generating topics
+            extractTextFromDocument(file, documentType);
             
             Syllabus syllabus = new Syllabus();
             syllabus.setTitle(title);
             syllabus.setDescription(description);
             syllabus.setDocumentType(documentType);
             syllabus.setOriginalDocumentUrl(filePath.toString());
+            syllabus.setStartDate(startDate);
+            syllabus.setEndDate(endDate);
             
             return createSyllabus(syllabus, userId);
         } catch (IOException e) {
@@ -126,8 +139,8 @@ public class SyllabusServiceImpl implements SyllabusService {
                             extractedText = pdfStripper.getText(document);
                         }
                     } else if (syllabus.getDocumentType() == Syllabus.DocumentType.WORD) {
-                        try (XWPFDocument document = new XWPFDocument(Files.newInputStream(filePath))) {
-                            XWPFWordExtractor extractor = new XWPFWordExtractor(document);
+                        try (XWPFDocument document = new XWPFDocument(Files.newInputStream(filePath));
+                             XWPFWordExtractor extractor = new XWPFWordExtractor(document)) {
                             extractedText = extractor.getText();
                         }
                     } else if (syllabus.getDocumentType() == Syllabus.DocumentType.TEXT) {
@@ -168,8 +181,8 @@ public class SyllabusServiceImpl implements SyllabusService {
                     return pdfStripper.getText(document);
                 }
             } else if (documentType == Syllabus.DocumentType.WORD) {
-                try (XWPFDocument document = new XWPFDocument(file.getInputStream())) {
-                    XWPFWordExtractor extractor = new XWPFWordExtractor(document);
+                try (XWPFDocument document = new XWPFDocument(file.getInputStream());
+                     XWPFWordExtractor extractor = new XWPFWordExtractor(document)) {
                     return extractor.getText();
                 }
             } else if (documentType == Syllabus.DocumentType.TEXT) {
@@ -183,17 +196,72 @@ public class SyllabusServiceImpl implements SyllabusService {
     
     // Placeholder for AI-based topic generation
     // In a real application, this would integrate with OpenAI API or similar service
+    
     private List<Topic> generateTopicsWithAI(String documentText, Syllabus syllabus) {
-        // For demonstration purposes, we're creating simple dummy topics
-        // In a real implementation, this would call OpenAI API to analyze and chunk the text
         List<Topic> topics = new ArrayList<>();
         
+        try {
+            // Use the OpenAI service to generate topics
+            TopicGenerationResponse response = openAIService.generateTopicsFromSyllabus(documentText);
+            
+            if (response != null && response.getTopics() != null && !response.getTopics().isEmpty()) {
+                LocalDateTime startDate = syllabus.getStartDate() != null ? 
+                    syllabus.getStartDate() : LocalDateTime.now();
+                
+                // Calculate duration between start and end date to evenly distribute topics
+                long daysBetween = syllabus.getEndDate() != null ? 
+                    java.time.Duration.between(startDate, syllabus.getEndDate()).toDays() : 
+                    response.getTopics().size();
+                
+                // If end date is not set or is before start date, default to 1 day per topic
+                if (daysBetween < 1) {
+                    daysBetween = response.getTopics().size();
+                }
+                
+                // Calculate days per topic (at least 1 day)
+                double daysPerTopic = Math.max(1, (double) daysBetween / response.getTopics().size());
+                
+                for (int i = 0; i < response.getTopics().size(); i++) {
+                    TopicDto topicDto = response.getTopics().get(i);
+                    
+                    Topic topic = new Topic();
+                    topic.setTitle(topicDto.getTitle());
+                    topic.setContent(topicDto.getContent());
+                    topic.setEstimatedDurationMinutes(topicDto.getEstimatedDurationMinutes());
+                    topic.setOrderIndex(i);
+                    
+                    // Calculate deadline based on even distribution between start and end dates
+                    LocalDateTime deadline = startDate.plusDays(Math.round(i * daysPerTopic));
+                    topic.setDeadline(deadline);
+                    
+                    topic.setSyllabus(syllabus);
+                    
+                    // Save and add to list
+                    topics.add(topicRepository.save(topic));
+                }
+            } else {
+                // Fallback to simple topic generation if OpenAI fails
+                fallbackTopicGeneration(documentText, syllabus, topics);
+            }
+        } catch (Exception e) {
+            // Log the error
+            System.err.println("Error generating topics with AI: " + e.getMessage());
+            e.printStackTrace();
+            
+            // Fallback to simple topic generation
+            fallbackTopicGeneration(documentText, syllabus, topics);
+        }
+        
+        return topics;
+    }
+    
+    private void fallbackTopicGeneration(String documentText, Syllabus syllabus, List<Topic> topics) {
         // Simple approach: Split by paragraphs or sections
         String[] paragraphs = documentText.split("\n\n");
         
         int topicCount = Math.min(paragraphs.length, 10); // Limit to 10 topics for demonstration
         
-        LocalDateTime startDate = LocalDateTime.now();
+        LocalDateTime startDate = syllabus.getStartDate() != null ? syllabus.getStartDate() : LocalDateTime.now();
         
         for (int i = 0; i < topicCount; i++) {
             Topic topic = new Topic();
@@ -206,7 +274,11 @@ public class SyllabusServiceImpl implements SyllabusService {
             
             topics.add(topicRepository.save(topic));
         }
-        
-        return topics;
+    }
+
+    @Override
+    public Syllabus getSyllabusWithDetails(Long id) {
+        return syllabusRepository.findByIdWithDetails(id)
+                .orElseThrow(() -> new RuntimeException("Syllabus not found with id: " + id));
     }
 }

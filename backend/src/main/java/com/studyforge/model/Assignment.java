@@ -1,5 +1,6 @@
 package com.studyforge.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -11,6 +12,7 @@ import java.util.Set;
 
 @Entity
 @Table(name = "assignments")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -42,9 +44,11 @@ public class Assignment {
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "topic_id", nullable = false)
+    @JsonIgnoreProperties("assignments")
     private Topic topic;
     
     @OneToMany(mappedBy = "assignment", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnoreProperties("assignment")
     private Set<Question> questions = new HashSet<>();
 
     public enum DifficultyLevel {

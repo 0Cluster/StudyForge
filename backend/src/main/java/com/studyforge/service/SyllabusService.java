@@ -12,6 +12,10 @@ public interface SyllabusService {
     List<Syllabus> getAllSyllabiByUserId(Long userId);
     Syllabus updateSyllabus(Long id, Syllabus syllabusDetails);
     void deleteSyllabus(Long id);
+    Syllabus processDocument(MultipartFile file, String title, String description, Long userId, 
+                        java.time.LocalDateTime startDate, java.time.LocalDateTime endDate);
     Syllabus processDocument(MultipartFile file, String title, String description, Long userId);
     List<Topic> generateTopicsFromSyllabus(Long syllabusId);
+    Syllabus getSyllabusWithDetails(Long id);
+
 }

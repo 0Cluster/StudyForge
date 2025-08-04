@@ -1,5 +1,6 @@
 package com.studyforge.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -11,6 +12,7 @@ import java.util.Set;
 
 @Entity
 @Table(name = "syllabi")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -40,7 +42,8 @@ public class Syllabus {
     private LocalDateTime updatedAt;
     
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "user_id")
+    @JsonIgnoreProperties("syllabi")
     private User user;
     
     @OneToMany(mappedBy = "syllabus", cascade = CascadeType.ALL, orphanRemoval = true)

@@ -7,11 +7,13 @@ import {
 } from '@mui/material';
 import { 
   ArrowBack, Add, Edit, Delete, Save, AutoAwesome,
-  Cancel, CalendarToday, AccessTime
+  Cancel, CalendarToday, AccessTime,
+  CloudDownload
 } from '@mui/icons-material';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
+import { parseDate, formatDate } from '@/utils/dateUtils';
 import { syllabusService } from '@/services/syllabus';
 import { topicService } from '@/services/topic';
 import { Syllabus, Topic, CreateTopicRequest } from '@/types';
@@ -242,7 +244,7 @@ export default function TopicGenerator() {
               {syllabus.startDate && (
                 <Chip 
                   icon={<CalendarToday fontSize="small" />}
-                  label={`Start: ${new Date(syllabus.startDate).toLocaleDateString()}`} 
+                  label={`Start: ${formatDate(syllabus.startDate)}`} 
                   variant="outlined" 
                 />
               )}
@@ -250,7 +252,7 @@ export default function TopicGenerator() {
               {syllabus.endDate && (
                 <Chip 
                   icon={<CalendarToday fontSize="small" />}
-                  label={`End: ${new Date(syllabus.endDate).toLocaleDateString()}`} 
+                  label={`End: ${formatDate(syllabus.endDate)}`} 
                   variant="outlined" 
                 />
               )}
@@ -303,7 +305,7 @@ export default function TopicGenerator() {
             
             <List>
               {topics.map((topic, index) => (
-                <React.Fragment key={topic.id}>
+                <div key={topic.id}>
                   {index > 0 && <Divider />}
                   <ListItem
                     secondaryAction={
@@ -339,7 +341,7 @@ export default function TopicGenerator() {
                       }
                     />
                   </ListItem>
-                </React.Fragment>
+                </div>
               ))}
             </List>
           </Paper>

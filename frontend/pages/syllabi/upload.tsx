@@ -7,7 +7,7 @@ import {
 import { CloudUpload } from '@mui/icons-material';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
-// import { syllabusService } from '@/services/syllabus';
+import { syllabusService } from '@/services/syllabus';
 import { authService } from '@/services/api';
 
 export default function UploadSyllabus() {
@@ -99,22 +99,26 @@ export default function UploadSyllabus() {
     setError(null);
 
     try {
-      // When service is uncommented, use the actual API call:
-      // await syllabusService.upload(
-      //   file,
-      //   title,
-      //   description,
-      //   currentUser.id
-      // );
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Create the request object
+      const uploadRequest = {
+        file,
+        title,
+        description,
+        userId: currentUser.id,
+        startDate: startDate || undefined,
+        endDate: endDate || undefined
+      };
+
+      // Use the syllabusService to upload the file with dates if provided
+      const uploadedSyllabus = startDate || endDate 
+        ? await syllabusService.uploadWithDates(uploadRequest)
+        : await syllabusService.upload(file, title, description, currentUser.id);
       
       setSuccess('Syllabus uploaded successfully!');
       
-      // Redirect after a short delay
+      // Redirect after a short delay to the generate-topics page for this syllabus
       setTimeout(() => {
-        router.push('/dashboard');
+        router.push(`/syllabi/generate-topics/${uploadedSyllabus.id}`);
       }, 1500);
     } catch (err: any) {
       console.error('Upload error:', err);

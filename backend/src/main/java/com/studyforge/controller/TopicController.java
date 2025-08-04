@@ -1,11 +1,12 @@
 package com.studyforge.controller;
 
+import com.studyforge.dto.ProgressDto;
+import com.studyforge.dto.TopicDto;
 import com.studyforge.dto.TopicRequest;
 import com.studyforge.model.Topic;
 import com.studyforge.model.Progress;
 import com.studyforge.service.TopicService;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -24,7 +25,7 @@ public class TopicController {
 
     @PostMapping
     @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
-    public ResponseEntity<Topic> createTopic(@Valid @RequestBody TopicRequest topicRequest) {
+    public ResponseEntity<TopicDto> createTopic(@Valid @RequestBody TopicRequest topicRequest) {
         Topic topic = new Topic();
         topic.setTitle(topicRequest.getTitle());
         // Since Topic doesn't have description field, we'll merge it into content if provided
@@ -38,28 +39,31 @@ public class TopicController {
         topic.setOrderIndex(topicRequest.getOrderIndex());
         
         Topic newTopic = topicService.createTopic(topic, topicRequest.getSyllabusId());
-        return ResponseEntity.ok(newTopic);
+        return ResponseEntity.ok(new TopicDto(newTopic));
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
-    public ResponseEntity<Topic> getTopic(@PathVariable Long id) {
+    public ResponseEntity<TopicDto> getTopic(@PathVariable Long id) {
         Topic topic = topicService.getTopic(id);
-        return ResponseEntity.ok(topic);
+        return ResponseEntity.ok(new TopicDto(topic));
     }
 
     @GetMapping("/syllabus/{syllabusId}")
     @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
-    public ResponseEntity<List<Topic>> getAllTopicsBySyllabus(@PathVariable Long syllabusId) {
+    public ResponseEntity<List<TopicDto>> getAllTopicsBySyllabus(@PathVariable Long syllabusId) {
         List<Topic> topics = topicService.getAllTopicsBySyllabusId(syllabusId);
-        return ResponseEntity.ok(topics);
+        List<TopicDto> topicDtos = topics.stream()
+            .map(TopicDto::new)
+            .collect(java.util.stream.Collectors.toList());
+        return ResponseEntity.ok(topicDtos);
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
-    public ResponseEntity<Topic> updateTopic(@PathVariable Long id, @RequestBody Topic topicDetails) {
+    public ResponseEntity<TopicDto> updateTopic(@PathVariable Long id, @RequestBody Topic topicDetails) {
         Topic updatedTopic = topicService.updateTopic(id, topicDetails);
-        return ResponseEntity.ok(updatedTopic);
+        return ResponseEntity.ok(new TopicDto(updatedTopic));
     }
 
     @DeleteMapping("/{id}")
@@ -71,10 +75,10 @@ public class TopicController {
 
     @PostMapping("/{topicId}/progress")
     @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
-    public ResponseEntity<Progress> trackProgress(
+    public ResponseEntity<ProgressDto> trackProgress(
             @PathVariable Long topicId,
             @RequestParam Integer completionPercentage) {
         Progress progress = topicService.trackProgress(topicId, completionPercentage);
-        return ResponseEntity.ok(progress);
+        return ResponseEntity.ok(new ProgressDto(progress));
     }
 }
